@@ -65,26 +65,27 @@ document.querySelector('form').addEventListener('submit', async function(event) 
 
     let result = await response.json();
 
-    if (result.occupied) {
-      // Show alert from server message, wait for user
-      if (confirm(result.message || "Room is already occupied. Proceed anyway?")) {
-        // Step 2: user confirmed, send forced update
-        response = await fetch('/forceAddResident', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-        const finalResult = await response.json();
-        alert(finalResult.message || "Update successful!");
-      }
-    } else {
-      // Room not occupied, proceed normally
-      alert(result.message || "Operation successful!");
+        if (result.occupied) {
+            // Show alert from server message, wait for user
+            if (confirm(result.message || "Room is already occupied. Proceed anyway?")) {
+                // Step 2: user confirmed, send forced update
+                response = await fetch('/forceAddResident', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (response.ok) {
+                    alert("Update successful!");
+                }
+            }
+        } else {
+            // Room not occupied, proceed normally
+            alert("Operation successful!");
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to submit form. Please try again.');
     }
-  } catch (error) {
-    console.error('Error:', error);
-    alert('Failed to submit form. Please try again.');
-  }
 });
 
         </script>

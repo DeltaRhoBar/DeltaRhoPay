@@ -3,17 +3,17 @@ package services
 import (
 	"database/sql"
 	"deltapay/internal/models"
-	"log"
 	"os"
 	"path"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 )
 
 type Database interface {
 	GetResidents() ([]models.Resident, error)
-	AddResident(int, int, string) error
-	CheckOccupation(int, int) (bool, error)
+	AddResidentIfNotOccupied(int, int, string) (bool, error)
+	AddResidentReplace(int, int, string) error
 }
 
 type Sqlite struct {
@@ -55,7 +55,9 @@ func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 		name,
 		IFNULL(d.amount, 0) AS debt
 		FROM residents
-		LEFT JOIN debts d ON residents.id = d.resident_id AND (d.date IS NULL OR d.date = '') ORDER BY r_floor ASC, r_nr ASC
+		LEFT JOIN debts d ON residents.id = d.resident_id AND (d.date IS NULL OR d.date = '') 
+		WHERE removed_on IS NULL
+		ORDER BY r_floor ASC, r_nr ASC
 		`
 	rows, err := s.db.Query(query)
 	if err != nil {
@@ -74,27 +76,45 @@ func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 	return residents, nil
 }
 
-func (s *Sqlite) AddResident(r_floor int, r_nr int, name string) error {
+func (s *Sqlite) AddResidentIfNotOccupied(r_floor int, r_nr int, name string) (bool, error) {
 	query := `INSERT INTO residents (r_floor, r_nr, name) VALUES (?, ?, ?);`
 	_, err := s.db.Exec(query, r_floor, r_nr, name)
-	return err
-}
-
-func (s *Sqlite) CheckOccupation(r_floor int, r_nr int) (bool, error) {
-	query := `SELECT EXISTS (
-	SELECT 1
-	FROM residents
-	WHERE r_floor = ?
-	AND r_nr = ?
-	AND removed_on IS NULL
-	) AS is_occupied;`
-
-	row := s.db.QueryRow(query, r_floor, r_nr)
-	var is_occupied bool
-	err := row.Scan(&is_occupied)
 	if err != nil {
+		sqliteErr, ok := err.(sqlite3.Error)
+		if ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			return true, nil
+		}
 		return false, err
 	}
-	log.Print(is_occupied)
-	return is_occupied, nil
+	return false, nil
 }
+
+func (s *Sqlite) AddResidentReplace(r_floor int, r_nr int, name string) error {
+	query_remove := `
+	UPDATE residents
+	SET removed_on = CURRENT_TIMESTAMP
+	WHERE r_floor = ?
+	AND r_nr = ?
+	AND removed_on IS NULL;`
+	query_add := `
+	INSERT INTO residents 
+	(r_floor, r_nr, name) 
+	VALUES (?, ?, ?);`
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(query_remove, r_floor, r_nr, name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = tx.Exec(query_add, r_floor, r_nr, name)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit() 
+}
+

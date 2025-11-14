@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS debts (
     FOREIGN KEY(resident_id) REFERENCES residents(id)
 );
 
+CREATE UNIQUE INDEX idx_unique_floor_nr_active 
+ON residents (r_floor, r_nr)
+WHERE removed_on IS NULL;
+
 CREATE TRIGGER IF NOT EXISTS create_invoice_for_new_resident
 AFTER INSERT ON residents
 FOR EACH ROW

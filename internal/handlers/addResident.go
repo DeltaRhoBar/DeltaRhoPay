@@ -33,9 +33,7 @@ func (h *AddResidentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-
-	occupied, err := h.db.CheckOccupation(resident.R_floor, resident.R_nr)
+	occupied, err := h.db.AddResidentIfNotOccupied(resident.R_floor, resident.R_nr, resident.Name)
 	if err != nil {
 		http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -46,16 +44,5 @@ func (h *AddResidentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-
-	if occupied {
-		json.NewEncoder(w).Encode(response)
-		return
-	}
-
-	err = h.db.AddResident(resident.R_floor, resident.R_nr, resident.Name)
-	if err != nil {
-		http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
 	json.NewEncoder(w).Encode(response)
 }

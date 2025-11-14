@@ -26,19 +26,20 @@ type PageResident struct {
 	Room PageRoom
 	Name string
 }
-	indexHandler, err := handlers.NewIndexHandler(database);
+	indexHandler, err := handlers.NewIndexHandler(database)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	adminHandler, err := handlers.NewAdminHandler();
+	adminHandler, err := handlers.NewAdminHandler()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	addResident := handlers.NewAddResidentHandler(database);
+	addResident := handlers.NewAddResidentHandler(database)
+	forceAddResident := handlers.NewForceAddResidentHandler(database)
 
-	r := routes.NewRouter(indexHandler, adminHandler, addResident)
+	r := routes.NewRouter(indexHandler, adminHandler, addResident, forceAddResident)
 
     http.ListenAndServe(":8080", r.Handler())
 }
