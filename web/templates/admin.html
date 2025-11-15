@@ -20,51 +20,88 @@
                     <div class="card shadow-sm">
                         <div class="card-body">
                             <h5 class="card-title mb-4">Add Resident</h5>
-                            <form>
+                            <form id="add_resident_form">
                                 <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="name_field" class="form-label">Name</label>
+                                        <input type="text" id="resident_name_field" class="form-control" />
+                                    </div>
                                     <div class="col-md-3 mb-3">
-                                        <label for="field1" class="form-label">Room Floor</label>
+                                        <label for="r_floor_field" class="form-label">Room Floor</label>
                                         <input type="number" id="r_floor_field" class="form-control" min="0" max="99" />
                                     </div>
                                     <div class="col-md-3 mb-3">
-                                        <label for="field2" class="form-label">Room Nr</label>
+                                        <label for="r_nr_field" class="form-label">Room Nr</label>
                                         <input type="number" id="r_nr_field" class="form-control" min="0" max="99" />
                                     </div>
+                                </div>
+                                <button  type="submit" class="btn btn-primary w-100">Add</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm" style="margin-top:2rem">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Manage Beverages</h5>
+
+                            <form id="add_beverage_form">
+                                <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label for="field3" class="form-label">Name</label>
-                                        <input type="text" id="name_field" class="form-control" />
+                                        <label for="beverage_name_field" class="form-label">Name</label>
+                                        <input type="text" id="beverage_name_field" class="form-control" min="0" max="99" />
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                        <label for="price_field" class="form-label">Price</label>
+                                        <input type="number" step="0.01" id="price_field" class="form-control" min="0" max="99" />
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label invisible">Add</label>
+                                        <button type="submit" class="btn btn-primary w-100">Add</button>
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-primary w-100">Add</button>
                             </form>
+                            <ul id="beverage_list" class="list-group">
+                                {{range .Beverages}}
+                                <li class="list-group-item">
+                                    <div class="row">
+                                        <div class="col">
+                                            <p>{{.Name}}</p>
+                                        </div>
+                                        <div class="col-4">
+                                            <p>{{trailingZero .Price}}€</p>
+                                        </div>
+                                        <div class="col-1">
+                                            <button style="line-height:1;" class="delete_beverage_button btn btn-sm btn-danger">
+                                                &times;
+                                            </button>
+                                        </div>
+                                    </div>
+                                </li>
+                                {{end}}
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script> 
-document.querySelector('form').addEventListener('submit', async function(event) {
-  event.preventDefault();
-
-  const data = {
-    R_floor: Number(document.getElementById('r_floor_field').value),
-    R_nr: Number(document.getElementById('r_nr_field').value),
-    Name: document.getElementById('name_field').value
-  };
-
-  try {
-    // Step 1: initial check
-    let response = await fetch('/addResident', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-
-    let result = await response.json();
-
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script> 
+document.getElementById("add_resident_form").addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const resident_data = {
+        R_floor: Number(document.getElementById('r_floor_field').value),
+        R_nr: Number(document.getElementById('r_nr_field').value),
+        Name: document.getElementById('resident_name_field').value
+    };
+    try {
+        // Step 1: initial check
+        let response = await fetch('/addResident', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(resident_data)
+        });
+        let result = await response.json();
         if (result.occupied) {
             // Show alert from server message, wait for user
             if (confirm(result.message || "Room is already occupied. Proceed anyway?")) {
@@ -72,22 +109,60 @@ document.querySelector('form').addEventListener('submit', async function(event) 
                 response = await fetch('/forceAddResident', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(resident_data)
                 });
-                if (response.ok) {
-                    alert("Update successful!");
+                if (!response.ok) {
+                    alert('Failed to submit form. Please try again.');
                 }
             }
-        } else {
-            // Room not occupied, proceed normally
-            alert("Operation successful!");
+        }    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to submit form. Please try again.');
+    }
+});
+document.querySelectorAll('.delete_beverage_button').forEach(button => {
+    button.addEventListener('click', async function(event) {
+        const listItem = event.target.closest('li');
+        const nameElement = listItem.querySelector('.col p');
+        const name = nameElement.textContent;
+        const beverage_data = {
+            Name: name
+        };
+        try {
+            let response = await fetch('/removeBeverage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(beverage_data)
+            });
+            if (!response.ok) {
+                alert('Failed to submit form. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to submit form. Please try again.');
+        }
+    });
+});
+document.getElementById('add_beverage_form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const beverage_data = {
+        Name: document.getElementById('beverage_name_field').value,
+        Price: Number(document.getElementById('price_field').value) * 100
+    };
+    try {
+        let response = await fetch('/addBeverage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(beverage_data)
+        });
+        if (!response.ok) {
+            alert('Failed to submit form. Please try again.');
         }
     } catch (error) {
         console.error('Error:', error);
         alert('Failed to submit form. Please try again.');
     }
 });
-
-        </script>
+</script>
     </body>
 </html>

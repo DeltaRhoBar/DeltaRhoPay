@@ -12,8 +12,12 @@ import (
 
 type Database interface {
 	GetResidents() ([]models.Resident, error)
+	GetBeverages() ([]models.Beverage, error)
 	AddResidentIfNotOccupied(int, int, string) (bool, error)
 	AddResidentReplace(int, int, string) error
+	AddBeverage(string, int) error
+	RemoveBeverage(string) error
+	AddDebt(int, int, int) error
 }
 
 type Sqlite struct {
@@ -57,7 +61,7 @@ func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 		FROM residents
 		LEFT JOIN debts d ON residents.id = d.resident_id AND (d.date IS NULL OR d.date = '') 
 		WHERE removed_on IS NULL
-		ORDER BY r_floor ASC, r_nr ASC
+		ORDER BY r_floor ASC, r_nr ASC;
 		`
 	rows, err := s.db.Query(query)
 	if err != nil {
@@ -74,6 +78,31 @@ func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 		residents = append(residents, resident)
 	}
 	return residents, nil
+}
+
+func (s *Sqlite) GetBeverages() ([]models.Beverage, error) {
+	const query = `
+		SELECT
+		name,
+		price
+		FROM beverages
+		ORDER BY name ASC;
+		`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	beverages := make([]models.Beverage, 0)
+	for rows.Next() {
+		beverage := models.Beverage{}
+		if err := rows.Scan(&beverage.Name, &beverage.Price); err != nil {
+			return nil, err
+		}
+		beverages = append(beverages, beverage)
+	}
+	return beverages, nil
 }
 
 func (s *Sqlite) AddResidentIfNotOccupied(r_floor int, r_nr int, name string) (bool, error) {
@@ -118,3 +147,29 @@ func (s *Sqlite) AddResidentReplace(r_floor int, r_nr int, name string) error {
 	return tx.Commit() 
 }
 
+func (s *Sqlite) AddBeverage(name string, price int) error {
+	query := `INSERT INTO beverages (name, price) VALUES (?, ?);`	
+	_, err := s.db.Exec(query, name, price)
+	return err
+}
+
+func (s *Sqlite) RemoveBeverage(name string) error {
+	query := `DELETE FROM beverages WHERE name = ?;`	
+	_, err := s.db.Exec(query, name)
+	return err
+}
+
+func (s *Sqlite) AddDebt(amount int, r_floor int, r_nr int) error {
+	query := `UPDATE debts
+	SET amount = amount + ?
+	WHERE resident_id = (
+	SELECT id
+	FROM residents
+	WHERE r_floor = ?
+	AND r_nr = ?
+	AND removed_on IS NULL
+	)
+	AND date IS NULL;`
+	_, err := s.db.Exec(query, amount, r_floor, r_nr)
+	return err
+}

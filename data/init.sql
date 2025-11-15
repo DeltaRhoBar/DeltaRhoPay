@@ -12,13 +12,22 @@ CREATE TABLE IF NOT EXISTS debts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     amount INTEGER NOT NULL DEFAULT 0,
     date TEXT,
-    resident_id INTEGER,
+    resident_id INTEGER NOT NULL,
     FOREIGN KEY(resident_id) REFERENCES residents(id)
 );
 
-CREATE UNIQUE INDEX idx_unique_floor_nr_active 
+CREATE TABLE IF NOT EXISTS beverages (
+    name TEXT PRIMARY KEY,
+    price INTEGER NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_unique_floor_nr_removed
 ON residents (r_floor, r_nr)
 WHERE removed_on IS NULL;
+
+CREATE UNIQUE INDEX idx_unique_resident_date
+ON debts (resident_id)
+WHERE date IS NULL;
 
 CREATE TRIGGER IF NOT EXISTS create_invoice_for_new_resident
 AFTER INSERT ON residents

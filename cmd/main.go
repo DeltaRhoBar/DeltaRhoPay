@@ -31,15 +31,18 @@ type PageResident struct {
 		log.Fatal(err)
 	}
 
-	adminHandler, err := handlers.NewAdminHandler()
+	adminHandler, err := handlers.NewAdminHandler(database)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	addResident := handlers.NewAddResidentHandler(database)
 	forceAddResident := handlers.NewForceAddResidentHandler(database)
+	addBeverage := handlers.NewAddBeverageHandler(database)
+	removeBeverage := handlers.NewRemoveBeverageHandler(database)
+	addDebt := handlers.NewAddDebtHandler(database)
 
-	r := routes.NewRouter(indexHandler, adminHandler, addResident, forceAddResident)
+	r := routes.NewRouter(indexHandler, adminHandler, addResident, forceAddResident, addBeverage, removeBeverage, addDebt)
 
     http.ListenAndServe(":8080", r.Handler())
 }
