@@ -8,40 +8,29 @@ CREATE TABLE IF NOT EXISTS residents (
     removed_on TEXT
 );
 
-CREATE TABLE IF NOT EXISTS debts (
+CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    amount INTEGER NOT NULL DEFAULT 0,
-    date TEXT,
+    beverage_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL,
+    date TEXT DEFAULT CURRENT_TIMESTAMP,
     resident_id INTEGER NOT NULL,
+    paid_on TEXT,
+    FOREIGN KEY(beverage_id) REFERENCES beverages(id),
     FOREIGN KEY(resident_id) REFERENCES residents(id)
 );
 
 CREATE TABLE IF NOT EXISTS beverages (
-    name TEXT PRIMARY KEY,
-    price INTEGER NOT NULL
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    price INTEGER NOT NULL,
+    removed_on TEXT
 );
 
 CREATE UNIQUE INDEX idx_unique_floor_nr_removed
 ON residents (r_floor, r_nr)
 WHERE removed_on IS NULL;
 
-CREATE UNIQUE INDEX idx_unique_resident_date
-ON debts (resident_id)
-WHERE date IS NULL;
+CREATE UNIQUE INDEX idx_unique_name_date
+ON beverages (name)
+WHERE removed_on IS NULL;
 
-CREATE TRIGGER IF NOT EXISTS create_invoice_for_new_resident
-AFTER INSERT ON residents
-FOR EACH ROW
-BEGIN
-    INSERT INTO debts (date, resident_id)
-    VALUES (NULL, NEW.id);
-END;
-
-CREATE TRIGGER IF NOT EXISTS create_new_debt_after_date_set
-AFTER UPDATE ON debts
-FOR EACH ROW
-WHEN (OLD.date IS NULL OR OLD.date = '') AND (NEW.date IS NOT NULL AND NEW.date <> '')
-BEGIN
-    INSERT INTO debts (date, resident_id)
-    VALUES (NULL, NEW.resident_id);
-END;

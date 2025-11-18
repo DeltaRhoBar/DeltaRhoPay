@@ -6,22 +6,27 @@ import (
 	"encoding/json"
 )
 
-type AddDebtHandler struct {
+type AddOrderHandler struct {
 	db services.Database
 }
 
-type order struct {
+type orderedBeverage struct {
+	Name string
 	Amount int
+}
+
+type order struct {
+	Beverages []orderedBeverage
 	R_floor int
 	R_nr int
 }
 
-func NewAddDebtHandler(db services.Database) *AddDebtHandler {
-	h := &AddDebtHandler{db: db}	
+func NewAddOrderHandler(db services.Database) *AddOrderHandler {
+	h := &AddOrderHandler{db: db}	
 	return h
 }
 
-func (h *AddDebtHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *AddOrderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -33,10 +38,13 @@ func (h *AddDebtHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.db.AddDebt(order.Amount, order.R_floor, order.R_nr)
-	if err != nil {
-		http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
-		return
+	
+	for _, beverage := range order.Beverages {
+		err := h.db.AddOrder(beverage.Name,beverage.Amount, order.R_floor, order.R_nr)
+		if err != nil {
+			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)

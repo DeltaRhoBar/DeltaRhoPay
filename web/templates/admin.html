@@ -80,6 +80,13 @@
                             </ul>
                         </div>
                     </div>
+                    <div class="card shadow-sm" style="margin-top:2rem">
+                        <div class="card-body">
+                            <h5 class="card-title mb-4">Debts</h5>
+                            <a href="/orders" type="submit" class="btn btn-primary w-100">View all</a>
+                            <a href="/currentOrders" type="submit" class="btn btn-primary w-100" style="margin-top:1rem">Check out/View current</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -87,82 +94,91 @@
         <!-- Bootstrap JS -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script> 
-document.getElementById("add_resident_form").addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const resident_data = {
-        R_floor: Number(document.getElementById('r_floor_field').value),
-        R_nr: Number(document.getElementById('r_nr_field').value),
-        Name: document.getElementById('resident_name_field').value
-    };
-    try {
-        // Step 1: initial check
-        let response = await fetch('/addResident', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(resident_data)
-        });
-        let result = await response.json();
-        if (result.occupied) {
-            // Show alert from server message, wait for user
-            if (confirm(result.message || "Room is already occupied. Proceed anyway?")) {
-                // Step 2: user confirmed, send forced update
-                response = await fetch('/forceAddResident', {
+        const resident_form = document.getElementById("add_resident_form");
+        resident_form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const resident_data = {
+                R_floor: Number(document.getElementById('r_floor_field').value),
+                R_nr: Number(document.getElementById('r_nr_field').value),
+                Name: document.getElementById('resident_name_field').value
+            };
+            try {
+                // Step 1: initial check
+                let response = await fetch('/addResident', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(resident_data)
                 });
-                if (!response.ok) {
-                    alert('Failed to submit form. Please try again.');
-                }
-            }
-        }    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to submit form. Please try again.');
-    }
-});
-document.querySelectorAll('.delete_beverage_button').forEach(button => {
-    button.addEventListener('click', async function(event) {
-        const listItem = event.target.closest('li');
-        const nameElement = listItem.querySelector('.col p');
-        const name = nameElement.textContent;
-        const beverage_data = {
-            Name: name
-        };
-        try {
-            let response = await fetch('/removeBeverage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(beverage_data)
-            });
-            if (!response.ok) {
+                let result = await response.json();
+                if (result.occupied) {
+                    // Show alert from server message, wait for user
+                    if (confirm(result.message || "Room is already occupied. Proceed anyway?")) {
+                        // Step 2: user confirmed, send forced update
+                        response = await fetch('/forceAddResident', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(resident_data)
+                        });
+                        if (!response.ok) {
+                            alert('Failed to submit form. Please try again.');
+                        }else{
+                            resident_form.reset();
+                        }
+                    }
+                }else{
+                    resident_form.reset();
+                }} catch (error) {
+                console.error('Error:', error);
                 alert('Failed to submit form. Please try again.');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Failed to submit form. Please try again.');
-        }
-    });
-});
-document.getElementById('add_beverage_form').addEventListener('submit', async function(event) {
-    event.preventDefault();
-    const beverage_data = {
-        Name: document.getElementById('beverage_name_field').value,
-        Price: Number(document.getElementById('price_field').value) * 100
-    };
-    try {
-        let response = await fetch('/addBeverage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(beverage_data)
         });
-        if (!response.ok) {
-            alert('Failed to submit form. Please try again.');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        alert('Failed to submit form. Please try again.');
-    }
-});
-</script>
+        document.querySelectorAll('.delete_beverage_button').forEach(button => {
+            button.addEventListener('click', async function(event) {
+                const listItem = event.target.closest('li');
+                const nameElement = listItem.querySelector('.col p');
+                const name = nameElement.textContent;
+                const beverage_data = {
+                    Name: name
+                };
+                try {
+                    let response = await fetch('/removeBeverage', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(beverage_data)
+                    });
+                    if (!response.ok) {
+                        alert('Failed to submit form. Please try again.');
+                    }else{
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Failed to submit form. Please try again.');
+                }
+            });
+        });
+        document.getElementById('add_beverage_form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const beverage_data = {
+                Name: document.getElementById('beverage_name_field').value,
+                Price: Number(document.getElementById('price_field').value) * 100
+            };
+            try {
+                let response = await fetch('/addBeverage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(beverage_data)
+                });
+                if (!response.ok) {
+                    alert('Failed to submit form. Please try again.');
+                }else{
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to submit form. Please try again.');
+            }
+        });
+        </script>
     </body>
 </html>

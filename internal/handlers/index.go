@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-type IndexPageData struct {
+type indexPageData struct {
 	Residents []models.Resident
 	Beverages []models.Beverage
 }
@@ -46,7 +46,7 @@ func (h *IndexHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get beverages", http.StatusInternalServerError)
 		return
 	}
-	data := &IndexPageData{Residents: residents, Beverages: beverages}
+	data := &indexPageData{Residents: residents, Beverages: beverages}
 	err = h.template.Execute(w, data)
 	if err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)

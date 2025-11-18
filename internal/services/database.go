@@ -13,11 +13,12 @@ import (
 type Database interface {
 	GetResidents() ([]models.Resident, error)
 	GetBeverages() ([]models.Beverage, error)
+	GetOrders() ([]models.Order, error)
 	AddResidentIfNotOccupied(int, int, string) (bool, error)
 	AddResidentReplace(int, int, string) error
 	AddBeverage(string, int) error
 	RemoveBeverage(string) error
-	AddDebt(int, int, int) error
+	AddOrder(string, int, int, int) error
 }
 
 type Sqlite struct {
@@ -54,14 +55,18 @@ func (s *Sqlite) Close() {
 func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 	const query = `
 		SELECT
-		r_floor,
-		r_nr,
-		name,
-		IFNULL(d.amount, 0) AS debt
-		FROM residents
-		LEFT JOIN debts d ON residents.id = d.resident_id AND (d.date IS NULL OR d.date = '') 
-		WHERE removed_on IS NULL
-		ORDER BY r_floor ASC, r_nr ASC;
+		r.r_floor,
+		r.r_nr,
+		r.name,
+		COALESCE(SUM(b.price * o.amount), 0) AS total_cost
+		FROM residents r
+		LEFT JOIN orders o
+		ON o.resident_id = r.id
+		LEFT JOIN beverages b
+		ON b.id = o.beverage_id 
+		WHERE r.removed_on IS NULL
+		GROUP BY r.id, r.r_floor, r.r_nr, r.name
+		ORDER BY r.r_floor, r.r_nr;
 		`
 	rows, err := s.db.Query(query)
 	if err != nil {
@@ -86,6 +91,7 @@ func (s *Sqlite) GetBeverages() ([]models.Beverage, error) {
 		name,
 		price
 		FROM beverages
+		WHERE removed_on IS NULL
 		ORDER BY name ASC;
 		`
 	rows, err := s.db.Query(query)
@@ -103,6 +109,39 @@ func (s *Sqlite) GetBeverages() ([]models.Beverage, error) {
 		beverages = append(beverages, beverage)
 	}
 	return beverages, nil
+}
+
+func (s *Sqlite) GetOrders() ([]models.Order, error) {
+	const query = `
+		SELECT
+		r.name,
+		r.r_floor,
+		r.r_nr,
+		b.name,
+		o.amount,
+		b.price,
+		o.date,
+		CASE WHEN o.paid_on IS NOT NULL THEN 1 ELSE 0 END AS paid
+		FROM residents r
+		JOIN orders o ON r.id = o.resident_id
+		JOIN beverages b ON b.id = o.beverage_id
+		ORDER BY o.date ASC;
+		`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := make([]models.Order, 0)
+	for rows.Next() {
+		order := models.Order{}
+		if err := rows.Scan(&order.Resident, &order.R_Floor, &order.R_Nr, &order.Beverage, &order.Amount, &order.Price, &order.Date, &order.Paid); err != nil {
+			return nil, err
+		}
+		orders = append(orders, order)
+	}
+	return []models.Order{}, nil
 }
 
 func (s *Sqlite) AddResidentIfNotOccupied(r_floor int, r_nr int, name string) (bool, error) {
@@ -154,22 +193,23 @@ func (s *Sqlite) AddBeverage(name string, price int) error {
 }
 
 func (s *Sqlite) RemoveBeverage(name string) error {
-	query := `DELETE FROM beverages WHERE name = ?;`	
+	query := `UPDATE beverages SET removed_on = CURRENT_TIMESTAMP WHERE name = ? AND removed_on IS NULL;`	
 	_, err := s.db.Exec(query, name)
 	return err
 }
 
-func (s *Sqlite) AddDebt(amount int, r_floor int, r_nr int) error {
-	query := `UPDATE debts
-	SET amount = amount + ?
-	WHERE resident_id = (
-	SELECT id
-	FROM residents
+func (s *Sqlite) AddOrder(beverage_name string, amount int, r_floor int, r_nr int) error {
+	query := `INSERT INTO orders (beverage_id, amount, resident_id)
+	VALUES (
+	(SELECT id FROM beverages
+	WHERE name = ? 
+	AND removed_on IS NULL),
+	?,
+	(SELECT id FROM residents
 	WHERE r_floor = ?
 	AND r_nr = ?
-	AND removed_on IS NULL
-	)
-	AND date IS NULL;`
-	_, err := s.db.Exec(query, amount, r_floor, r_nr)
+	AND removed_on IS NULL)
+	);`
+	_, err := s.db.Exec(query, beverage_name, amount, r_floor, r_nr)
 	return err
 }
