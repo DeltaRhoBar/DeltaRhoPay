@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"fmt"
 )
 
 
@@ -20,7 +21,11 @@ type OrdersPageHandler struct {
 }
 
 func NewOrdersPageHandler(db services.Database) (*OrdersPageHandler, error) {
-	tmpl, err := template.New("orders.html").ParseFiles(filepath.Join("web", "templates", "orders.html"))
+	trailingZeroFunc := template.FuncMap{"trailingZero": func(i int) string {
+		return fmt.Sprintf("%.2f", float64(i) / 100)
+	},	
+	}
+	tmpl, err := template.New("orders.html").Funcs(trailingZeroFunc).ParseFiles(filepath.Join("web", "templates", "orders.html"))
 	if err != nil {
 	return nil, err
 	}
@@ -29,7 +34,7 @@ func NewOrdersPageHandler(db services.Database) (*OrdersPageHandler, error) {
 }
 
 func (h *OrdersPageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	orders, err := h.db.GetOrders()
+	orders, err := h.db.GetOrders(0)
 	if err != nil {
 		log.Println(err)
 		http.Error(w, "Failed to get orders", http.StatusInternalServerError)

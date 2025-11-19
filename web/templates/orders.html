@@ -62,7 +62,7 @@
                         <td>{{.R_floor}}/{{.R_nr}}</td>
                         <td>{{.Beverage}}</td>
                         <td>{{.Amount}}</td>
-                        <td>{{.Price}}€</td>
+                        <td>{{trailingZero .Price}}€</td>
                         <td>{{.Date}}</td>
                         {{ if .Paid}}
                         <td><span class="badge bg-success">Paid</span></td>
@@ -73,13 +73,70 @@
                     {{end}}
                 </tbody>
             </table>
+            <div class="d-flex justify-content-center align-items-center mt-3 gap-3">
+                <button id="prev-btn" class="btn btn-secondary" disabled>Previous</button>
+                <span id="page-indicator" class="fw-bold">1</span>
+                <button id="next-btn" class="btn btn-secondary" disabled>Next</button>
+            </div>
         </div>
 
-  <script>
-    const searchInput = document.getElementById('search-name');
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
-    const ordersBody = document.getElementById('orders-body');
+        <script>
+        const pageIndicator = document.getElementById('page-indicator');
+        const list = document.getElementById('orders-body');
+        const nextPageButton = document.getElementById('next-btn');
+        const prevPageButton = document.getElementById('prev-btn');
+        nextPageButton.disabled = list.children.length < 50;
+        const refreshOrders = async function() {
+            list.innerHTML = '';
+            const params = new URLSearchParams({ Nr: Number(pageIndicator.textContent) });
+
+            const response = await fetch(`/getOrders?${params}`, {
+                method: 'GET'
+            });
+            if(response.ok) {
+                let result = await response.json();
+                result.orders.forEach((order) => {
+                    const resident = order.Resident;
+                    const r_floor = order.R_floor;
+                    const r_nr = order.R_nr;
+                    const beverage = order.Beverage;
+                    const amount = order.Amount;
+                    const price = order.Price;
+                    const date = order.Date;
+                    const paid = order.Paid;
+                    const tmpl = 
+                        `
+<tr>
+<td>${resident}</td>
+<td>${r_floor}/${r_nr}</td>
+<td>${beverage}</td>
+<td>${amount}</td>
+<td>${(price/100).toFixed(2)}€</td>
+<td>${date}</td>
+<td><span class="badge ${paid? 'bg-success' : 'bg-danger'}">${paid? 'Paid' : 'Unpaid'}</span></td>
+</tr>
+`;
+                    list.insertAdjacentHTML('beforeend', tmpl)
+                });
+            }
+        }
+
+        nextPageButton.addEventListener("click", async function() {
+            pageIndicator.textContent = Number(pageIndicator.textContent) + 1;
+            prevPageButton.disabled = false;                
+            await refreshOrders(Number(pageIndicator.textContent));
+            nextPageButton.disabled = list.children.length < 50;
+        });
+        prevPageButton.addEventListener("click", async function() {
+            pageIndicator.textContent = Number(pageIndicator.textContent) - 1;
+            prevPageButton.disabled = Number(pageIndicator.textContent) <= 1;                
+            await refreshOrders(Number(pageIndicator.textContent));
+            nextPageButton.disabled = list.children.length < 50;
+        });
+        const searchInput = document.getElementById('search-name');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const ordersBody = document.getElementById('orders-body');
 
     function filterOrders() {
       const searchValue = searchInput.value.toLowerCase();

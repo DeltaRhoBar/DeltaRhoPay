@@ -2,8 +2,8 @@ package models
 
 type Order struct {
 	Resident string
-	R_Floor int
-	R_Nr int
+	R_floor int
+	R_nr int
 	Beverage string
 	Amount int
 	Price int

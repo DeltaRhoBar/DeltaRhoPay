@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orders Overview with Search and Date Range</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body class="bg-light">
+  <div class="container py-4">
+    <h1 class="mb-4 text-center">Orders Overview</h1>
+
+            <div class="row mb-3 g-3 align-items-center">
+                <div class="col-md-8">
+                    <input
+                        type="text"
+                        id="search-name"
+                        class="form-control"
+                        placeholder="Search by resident name..."
+                        aria-label="Search by resident name"
+                    />
+                </div>
+                <div class="col-md-4">
+                    <button id="checkout_button" class="btn btn-danger w-100">Checkout</button>
+                </div>
+            </div>
+            <table
+                class="table table-striped table-bordered align-middle shadow-sm"
+                id="orders-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Resident</th>
+                        <th scope="col">Room</th>
+                        <th scope="col">Moved out</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Pay</th>
+                    </tr>
+                </thead>
+                <tbody id="debts-body">
+                    {{range .Debts}}
+                    <tr data-id="{{.Resident_id}}" class="debt">
+                        <td class="name">{{.Resident.Name}}</td>
+                        <td>{{.Resident.Room.Floor}}/{{.Resident.Room.Nr}}</td>
+                        <td>{{.Moved}}</td>
+                        <td>{{trailingZero .Resident.Debt}}€</td>
+                        <td><span class="badge bg-success">Pay</span></td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+        <script>
+        const list = document.getElementById('orders-body');
+
+        document.getElementById("checkout_button").addEventListener("click", async function() {
+            let response = await fetch('/checkout', {
+                method: 'POST',
+            });
+            if (!response.ok) {
+                alert('Failed to submit form. Please try again.');
+            }
+        });
+
+        const debts = document.querySelectorAll("#debts-body .debt")
+        debts.forEach((debt) => {
+            const id = Number(debt.dataset.id);
+            const name = debt.querySelector(".name").textContent;
+            debt.querySelector(".badge").addEventListener("click", async function () {
+                if(confirm("Did " + name + " really pay?")) {
+                    const pay_data = {Id: id};
+                    response = await fetch('/pay', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(pay_data)
+                    });
+                    if (!response.ok) {
+                        alert('Failed to submit form. Please try again.');
+                    }
+                }
+            });
+        });
+
+        const searchInput = document.getElementById('search-name');
+        const startDateInput = document.getElementById('start-date');
+        const endDateInput = document.getElementById('end-date');
+        const ordersBody = document.getElementById('orders-body');
+
+    function filterOrders() {
+      const searchValue = searchInput.value.toLowerCase();
+      const startDate = startDateInput.value;
+      const endDate = endDateInput.value;
+
+      const rows = ordersBody.querySelectorAll('tr');
+
+      rows.forEach(row => {
+        const residentName = row.cells[0].textContent.toLowerCase();
+        const date = row.cells[6].textContent;
+
+        let matchesSearch = residentName.includes(searchValue);
+        let matchesStartDate = true;
+        let matchesEndDate = true;
+
+        if (startDate) {
+          matchesStartDate = date >= startDate;
+        }
+        if (endDate) {
+          matchesEndDate = date <= endDate;
+        }
+
+        if (matchesSearch && matchesStartDate && matchesEndDate) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    searchInput.addEventListener('input', filterOrders);
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+

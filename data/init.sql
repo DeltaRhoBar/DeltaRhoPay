@@ -26,6 +26,11 @@ CREATE TABLE IF NOT EXISTS beverages (
     removed_on TEXT
 );
 
+CREATE TABLE IF NOT EXISTS checkouts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE UNIQUE INDEX idx_unique_floor_nr_removed
 ON residents (r_floor, r_nr)
 WHERE removed_on IS NULL;
