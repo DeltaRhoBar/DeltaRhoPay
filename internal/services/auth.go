@@ -1,22 +1,21 @@
 package services
 
 import (
-	"time"
 	"crypto/rand"
 	"encoding/hex"
-	"os"
+	"sync"
+	"time"
 )
 
 
 type Authenticator struct {
 	tokens map[string]time.Time
-	secret string
+	mu sync.RWMutex
 }
 
 func NewAuthenticator() *Authenticator {
-	secret := os.Getenv("SECRET")
 	tokens := make(map[string]time.Time)
-	return &Authenticator{secret: secret, tokens: tokens}
+	return &Authenticator{tokens: tokens}
 }
 
 func (a *Authenticator) GenerateToken() (string, error) {
@@ -30,18 +29,24 @@ func (a *Authenticator) GenerateToken() (string, error) {
 
 	tokenString := hex.EncodeToString(bytes)
 
+	a.mu.Lock()
 	a.tokens[tokenString] = exp
+	a.mu.Unlock()
 
 	return tokenString, nil
 }
 
 func (a *Authenticator) Check(token string) bool {
 	now := time.Now()
+
+	a.mu.Lock()
 	for t, exp := range a.tokens {
 		if now.After(exp) {
 			delete(a.tokens, t)
 		}
 	}
 	_, authorized := a.tokens[token]
+	a.mu.Unlock()
+
 	return authorized
 }
