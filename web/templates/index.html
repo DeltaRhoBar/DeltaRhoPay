@@ -74,17 +74,17 @@
                                                 <div class="col-6">
                                                     <p class="card-text mb-3 beverage_name" style="margin: 0.5rem 0; line-height: 1;">{{.Name}}</p>
                                                 </div>
-                                                <div class="col-2">
-                                                    <p class="card-text mb-3 beverage_price" style="margin: 0.5rem 0; line-height: 1;" data-price="{{.Price}}">{{trailingZero .Price}}€</p>
-                                                </div>
-                                                <div class="col-2">
-                                                    <p class="card-text mb-3 beverage_amount" style="margin: 0.5rem 0; line-height: 1;">0</p>
-                                                </div>
-                                                <div class="col-1">
-                                                    <button style="padding: 0.5rem;" class="btn btn-sm btn-primary increment-btn increment_btn">+</button>
+                                                <div class="col-3" style="text-align:center;">
+                                                    <p class="card-text mb-3 beverage_price" style="margin: 0.5rem; line-height: 1;" data-price="{{.Price}}">{{trailingZero .Price}}€</p>
                                                 </div>
                                                 <div class="col-1">
                                                     <button style="padding: 0.5rem;" class="btn btn-sm btn-outline-primary decrement-btn decrement_btn">-</button>
+                                                </div>
+                                                <div class="col-1" style="text-align:center;">
+                                                    <p class="card-text mb-3 beverage_amount" style="margin: 0.5rem 0; line-height: 1;">0</p>
+                                                </div>
+                                                <div class="col-1" style="padding-left: 0;">
+                                                    <button style="padding: 0.5rem;" class="btn btn-sm btn-primary increment-btn increment_btn">+</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -114,7 +114,7 @@
                                 <div class="col">
                                     <p class="name" style="margin: 0.25rem 0; line-height: 0.5;">{{.Name}}</p>
                                 </div>
-                                <div class="col-2">
+                                <div class="col-3">
                                     <p class="debt" style="margin: 0.25rem 0; line-height: 0.5;">{{trailingZero .Debt}}€</p>
                                 </div>
                             </div>
