@@ -65,8 +65,9 @@ func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 		FROM residents r
 		LEFT JOIN orders o
 		ON o.resident_id = r.id
+		AND o.paid_on IS NULL          
 		LEFT JOIN beverages b
-		ON b.id = o.beverage_id 
+		ON b.id = o.beverage_id
 		WHERE r.removed_on IS NULL
 		GROUP BY r.id, r.r_floor, r.r_nr, r.name
 		ORDER BY r.r_floor, r.r_nr;
