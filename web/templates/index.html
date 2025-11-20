@@ -167,8 +167,8 @@
         const searchInput = document.getElementById("searchInput");
         const myModalEl = document.getElementById("myModal");
         const myModal = new bootstrap.Modal(myModalEl);
+        const residents = document.querySelectorAll("#gridList .item-card");
         const setUpModal = function () {
-            const residents = document.querySelectorAll("#gridList .item-card");
             residents.forEach((resident) => {
                 resident.addEventListener("click", function () {
                     myModalEl.dataset.resident = resident.id;
