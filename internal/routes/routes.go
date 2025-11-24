@@ -38,7 +38,7 @@ func NewRouter(
 		authenticator: authenticator,
 	}
 
-	static := http.FileServer(http.Dir(".web"))
+	static := http.FileServer(http.Dir("web/static/"))
 
 	router.setupRoutes(static, index, loginPage, admin, ordersPage, loginData, addResident, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPage, checkout, pay)
 

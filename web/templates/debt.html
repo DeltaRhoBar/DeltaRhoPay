@@ -1,23 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Orders Overview with Search and Date Range</title>
-  <link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-    rel="stylesheet"
-  />
-</head>
-<body class="bg-light">
-  <div class="container py-4">
-    <h1 class="mb-4 text-center">Orders Overview</h1>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Debt overview</title>
+        <link rel="icon" type="image/ico" href="/static/images/favicon.ico">
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-light">
+        <div class="container py-4">
+            <h1 class="mb-4 text-center">Debt overview</h1>
 
             <div class="row mb-3 g-3 align-items-center">
                 <div class="col-md-8">
                     <input
                         type="text"
-                        id="search-name"
+                        id="search-input"
                         class="form-control"
                         placeholder="Search by resident name..."
                         aria-label="Search by resident name"
@@ -43,7 +44,7 @@
                     {{range .Debts}}
                     <tr data-id="{{.Resident_id}}" class="debt">
                         <td class="name">{{.Resident.Name}}</td>
-                        <td>{{.Resident.Room.Floor}}/{{.Resident.Room.Nr}}</td>
+                        <td class="room">{{.Resident.Room.Floor}}/{{.Resident.Room.Nr}}</td>
                         <td>{{.Moved}}</td>
                         <td>{{trailingZero .Resident.Debt}}€</td>
                         <td><span class="badge bg-success">Pay</span></td>
@@ -86,44 +87,19 @@
                 }
             });
         });
-
-        const searchInput = document.getElementById('search-name');
-        const startDateInput = document.getElementById('start-date');
-        const endDateInput = document.getElementById('end-date');
-        const ordersBody = document.getElementById('orders-body');
-
-    function filterOrders() {
-      const searchValue = searchInput.value.toLowerCase();
-      const startDate = startDateInput.value;
-      const endDate = endDateInput.value;
-
-      const rows = ordersBody.querySelectorAll('tr');
-
-      rows.forEach(row => {
-        const residentName = row.cells[0].textContent.toLowerCase();
-        const date = row.cells[6].textContent;
-
-        let matchesSearch = residentName.includes(searchValue);
-        let matchesStartDate = true;
-        let matchesEndDate = true;
-
-        if (startDate) {
-          matchesStartDate = date >= startDate;
+        const applyFilter = function () {
+            const searchInput = document.getElementById("search-input");
+            searchInput.addEventListener("input", function () {
+                const query = this.value.toLowerCase();
+                debts.forEach((debt) => {
+                    const name = debt.querySelector(".name").textContent.toLowerCase();
+                    const room = debt.querySelector(".room").textContent.toLowerCase();
+                    debt.parentElement.style.display = name.includes(query) || room.includes(query) ? "" : "none";
+                });
+            });
         }
-        if (endDate) {
-          matchesEndDate = date <= endDate;
-        }
-
-        if (matchesSearch && matchesStartDate && matchesEndDate) {
-          row.style.display = '';
-        } else {
-          row.style.display = 'none';
-        }
-      });
-    }
-
-    searchInput.addEventListener('input', filterOrders);
-  </script>
+        applyFilter();
+        </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
