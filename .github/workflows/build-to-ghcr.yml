@@ -1,0 +1,45 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  GHCR_IMAGE_NAME: ghcr.io/${{ github.actor }}/DeltaRhoPay
+  GHCR_IMAGE_TAG: latest
+  
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packages: write
+      
+    steps:
+      - name: Lowercase IMAGE_TAG
+        run: |
+          echo "IMAGE_TAG=${GHCR_IMAGE_NAME@L}:${GHCR_IMAGE_TAG}" >> "${GITHUB_ENV}"
+      
+      - name: Checkout code
+        uses: actions/checkout@v6
+        
+      - name: Log in to GitHub Docker Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Image
+        uses: docker/build-push-action@v6
+        with:
+          file: ./Dockerfile
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_TAG }}
+        
