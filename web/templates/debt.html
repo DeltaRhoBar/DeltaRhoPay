@@ -91,10 +91,8 @@
             const searchInput = document.getElementById("search-input");
             searchInput.addEventListener("input", function () {
                 const query = this.value.toLowerCase();
-                console.log(query);
                 debts.forEach((debt) => {
                     const name = debt.querySelector(".name").textContent.toLowerCase();
-                    console.log(name.includes(query));
                     const room = debt.querySelector(".room").textContent.toLowerCase();
                     debt.style.display = (name.includes(query) || room.includes(query))? "" : "none";
                 });
