@@ -6,44 +6,40 @@ import (
 	"encoding/json"
 )
 
-type AddResidentHandler struct {
+type UpdateResidentHandler struct {
 	db services.Database
 }
 
-type newResident struct {
+type updatedResident struct {
+	Id int
 	R_floor int
 	R_nr int
 	Name string
 	Telephone string
 }
 
-func NewAddResidentHandler(db services.Database) *AddResidentHandler {
-	h := &AddResidentHandler{db: db}	
+func NewUpdateResidentHandler(db services.Database) *UpdateResidentHandler {
+	h := &UpdateResidentHandler{db: db}	
 	return h
 }
 
-func (h *AddResidentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *UpdateResidentHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var resident newResident
+	var resident updatedResident
 	if err := json.NewDecoder(r.Body).Decode(&resident); err != nil {
 		http.Error(w, "Bad request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	occupied, err := h.db.AddResidentIfNotOccupied(resident.R_floor, resident.R_nr, resident.Name, resident.Telephone)
+	err := h.db.UpdateResident(resident.Id, resident.R_floor, resident.R_nr, resident.Name, resident.Telephone)
 	if err != nil {
 		http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response := map[string]interface{}{
-		"occupied": occupied,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusOK)
 }

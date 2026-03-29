@@ -27,7 +27,7 @@ func (h *ForceAddResidentHandler) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err := h.db.AddResidentReplace(resident.R_floor, resident.R_nr, resident.Name)
+	err := h.db.AddResidentReplace(resident.R_floor, resident.R_nr, resident.Name, resident.Telephone)
 	if err != nil {
 		http.Error(w, "Internal Server Error "+err.Error(), http.StatusInternalServerError)
 		return

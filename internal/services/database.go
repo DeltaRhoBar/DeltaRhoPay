@@ -12,11 +12,13 @@ import (
 
 type Database interface {
 	GetResidents() ([]models.Resident, error)
+	GetAllResidents() ([]models.Resident, error)
 	GetBeverages() ([]models.Beverage, error)
 	GetDebts() ([]models.Debt, error)
 	GetOrders(int) ([]models.Order, error)
-	AddResidentIfNotOccupied(int, int, string) (bool, error)
-	AddResidentReplace(int, int, string) error
+	AddResidentIfNotOccupied(int, int, string, string) (bool, error)
+	AddResidentReplace(int, int, string, string) error
+	UpdateResident(int, int, int, string, string) error
 	AddBeverage(string, int) error
 	RemoveBeverage(string) error
 	AddOrder(string, int, int, int) error
@@ -58,9 +60,12 @@ func (s *Sqlite) Close() {
 func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 	const query = `
 		SELECT
+		r.id,
 		r.r_floor,
 		r.r_nr,
 		r.name,
+		r.telephone,
+		COALESCE(r.removed_on, 'Still living here') AS moved_out_on,
 		COALESCE(SUM(b.price * o.amount), 0) AS total_cost
 		FROM residents r
 		LEFT JOIN orders o
@@ -81,7 +86,46 @@ func (s *Sqlite) GetResidents() ([]models.Resident, error) {
 	residents := make([]models.Resident, 0)
 	for rows.Next() {
 		resident := models.Resident{}
-		if err := rows.Scan(&resident.Room.Floor, &resident.Room.Nr, &resident.Name, &resident.Debt); err != nil {
+		if err := rows.Scan(&resident.Id, &resident.Room.Floor, &resident.Room.Nr, &resident.Name, &resident.Telephone, &resident.Moved, &resident.Debt); err != nil {
+			return nil, err
+		}
+		residents = append(residents, resident)
+	}
+	return residents, nil
+}
+
+func (s *Sqlite) GetAllResidents() ([]models.Resident, error) {
+	const query = `
+		SELECT
+		r.id,
+		r.r_floor,
+		r.r_nr,
+		r.name,
+		r.telephone,
+		COALESCE(r.removed_on, 'Still living here') AS moved_out_on,
+		COALESCE(SUM(b.price * o.amount), 0) AS total_cost
+		FROM residents r
+		LEFT JOIN orders o
+		ON o.resident_id = r.id
+		AND o.paid_on IS NULL          
+		LEFT JOIN beverages b
+		ON b.id = o.beverage_id
+		GROUP BY r.id, r.r_floor, r.r_nr, r.name
+		ORDER BY 
+		r.removed_on IS NOT NULL,
+		r.removed_on ASC,
+		r.r_floor, r.r_nr;
+		`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	residents := make([]models.Resident, 0)
+	for rows.Next() {
+		resident := models.Resident{}
+		if err := rows.Scan(&resident.Id, &resident.Room.Floor, &resident.Room.Nr, &resident.Name, &resident.Telephone, &resident.Moved, &resident.Debt); err != nil {
 			return nil, err
 		}
 		residents = append(residents, resident)
@@ -142,7 +186,7 @@ func (s *Sqlite) GetDebts() ([]models.Debt, error) {
 	debts := make([]models.Debt, 0)
 	for rows.Next() {
 		debt := models.Debt{}
-		if err := rows.Scan(&debt.Resident_id, &debt.Resident.Name, &debt.Resident.Room.Floor, &debt.Resident.Room.Nr, &debt.Moved, &debt.Resident.Debt ); err != nil {
+		if err := rows.Scan(&debt.Resident_id, &debt.Resident.Name, &debt.Resident.Room.Floor, &debt.Resident.Room.Nr, &debt.Resident.Moved, &debt.Resident.Debt ); err != nil {
 			return nil, err
 		}
 		debts = append(debts, debt)
@@ -188,9 +232,9 @@ func (s *Sqlite) GetOrders(page int) ([]models.Order, error) {
 	return orders, nil
 }
 
-func (s *Sqlite) AddResidentIfNotOccupied(r_floor int, r_nr int, name string) (bool, error) {
-	query := `INSERT INTO residents (r_floor, r_nr, name) VALUES (?, ?, ?);`
-	_, err := s.db.Exec(query, r_floor, r_nr, name)
+func (s *Sqlite) AddResidentIfNotOccupied(r_floor int, r_nr int, name string, telephone string) (bool, error) {
+	query := `INSERT INTO residents (r_floor, r_nr, name, telephone) VALUES (?, ?, ?, ?);`
+	_, err := s.db.Exec(query, r_floor, r_nr, name, telephone)
 	if err != nil {
 		sqliteErr, ok := err.(sqlite3.Error)
 		if ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
@@ -201,7 +245,7 @@ func (s *Sqlite) AddResidentIfNotOccupied(r_floor int, r_nr int, name string) (b
 	return false, nil
 }
 
-func (s *Sqlite) AddResidentReplace(r_floor int, r_nr int, name string) error {
+func (s *Sqlite) AddResidentReplace(r_floor int, r_nr int, name string, telephone string) error {
 	query_remove := `
 	UPDATE residents
 	SET removed_on = CURRENT_TIMESTAMP
@@ -210,8 +254,8 @@ func (s *Sqlite) AddResidentReplace(r_floor int, r_nr int, name string) error {
 	AND removed_on IS NULL;`
 	query_add := `
 	INSERT INTO residents 
-	(r_floor, r_nr, name) 
-	VALUES (?, ?, ?);`
+	(r_floor, r_nr, name, telephone) 
+	VALUES (?, ?, ?, ?);`
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -222,12 +266,24 @@ func (s *Sqlite) AddResidentReplace(r_floor int, r_nr int, name string) error {
 		tx.Rollback()
 		return err
 	}
-	_, err = tx.Exec(query_add, r_floor, r_nr, name)
+	_, err = tx.Exec(query_add, r_floor, r_nr, name, telephone)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 	return tx.Commit() 
+}
+
+func (s *Sqlite) UpdateResident(id int, r_floor int, r_nr int, name string, telephone string) error {
+	query := `
+	UPDATE residents SET
+	name = ?,
+	r_floor = ?,
+	r_nr = ?,
+	telephone = ?
+	WHERE id = ?;`
+	_, err := s.db.Exec(query, name, r_floor, r_nr, telephone, id)
+	return err
 }
 
 func (s *Sqlite) AddBeverage(name string, price int) error {

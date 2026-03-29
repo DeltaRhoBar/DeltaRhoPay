@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Resident overview</title>
+        <link rel="icon" type="image/ico" href="/static/images/favicon.ico">
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+    </head>
+    <body class="bg-light">
+        <div class="container py-4">
+            <div class="modal fade" id="myModal" data-resident="" tabindex="-1" aria-labelledby="modalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalLabel" style="margin-right:5px;">Change data of</h5>
+                            <h5 class="modal-title resident_name" id="modalLabel"></h5>
+                            <button id="modal_dismiss" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mt-3">
+                                <form id="update_resident_form" data-id="">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <label for="name_field" class="form-label">Name</label>
+                                            <input type="text" id="resident_name_field" class="form-control" />
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <label for="telephone-field" class="form-label">Telephone</label>
+                                            <input type="text" id="resident_telephone_field" class="form-control" />
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <label for="r_floor_field" class="form-label">Floor</label>
+                                            <input type="number" id="r_floor_field" class="form-control" min="0" max="99" />
+                                        </div>
+                                        <div class="col-md-2 mb-3">
+                                            <label for="r_nr_field" class="form-label">Nr</label>
+                                            <input type="number" id="r_nr_field" class="form-control" min="0" max="99" />
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button id="save_changes_button" type="button" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <h1 class="mb-4 text-center">Resident overview</h1>
+            <div class="row mb-3 g-3 align-items-center">
+                <div class="col-md-8">
+                    <input
+                        type="text"
+                        id="search-input"
+                        class="form-control"
+                        placeholder="Search by resident name..."
+                        aria-label="Search by resident name"
+                    />
+                </div>
+            </div>
+            <table
+                class="table table-striped table-bordered align-middle shadow-sm"
+                id="orders-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Resident</th>
+                        <th scope="col">Room</th>
+                        <th scope="col">Telephone</th>
+                        <th scope="col">Moved out</th>
+                    </tr>
+                </thead>
+                <tbody id="residents-body">
+                    {{range .Residents}}
+                    <tr data-id="{{.Id}}" class="resident">
+                        <td class="name">{{.Name}}</td>
+                        <td class="room">{{.Room.Floor}}/{{.Room.Nr}}</td>
+                        <td class="telephone">{{.Telephone}}</td>
+                        <td>{{.Moved}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+        const myModalEl = document.getElementById("myModal");
+        const myModal = new bootstrap.Modal(myModalEl);
+        const save_button = document.getElementById("save_changes_button");
+        save_button.addEventListener('click', async function(event) {
+            const resident_data = {
+                Id: Number(document.getElementById('update_resident_form').dataset.id),
+                R_floor: Number(document.getElementById('r_floor_field').value),
+                R_nr: Number(document.getElementById('r_nr_field').value),
+                Name: document.getElementById('resident_name_field').value,
+                Telephone: document.getElementById('resident_telephone_field').value
+            };
+            try {
+                let response = await fetch('/updateResident', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(resident_data)
+                });
+                if (!response.ok) {
+                    alert('Failed to submit form. Please try again.');
+                }else{
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to submit form. Please try again.');
+            }
+        });
+        const residents = document.querySelectorAll("#residents-body .resident")
+        residents.forEach((resident) => {
+            const id = Number(resident.dataset.id);
+            const name = resident.querySelector(".name").textContent;
+            const room = resident.querySelector(".room").textContent;
+            const [floorStr, roomStr] = room.split('/');
+            const telephone = resident.querySelector(".telephone").textContent;
+            resident.addEventListener("click", async function () {
+                myModalEl.querySelector(".resident_name").textContent = name;
+                document.getElementById('update_resident_form').dataset.id = id;
+                document.getElementById('r_floor_field').value = parseInt(floorStr, 10);
+                document.getElementById('r_nr_field').value = parseInt(roomStr, 10);
+                document.getElementById('resident_name_field').value = name;
+                document.getElementById('resident_telephone_field').value = telephone;
+                myModal.show();
+
+            });
+        });
+        const applyFilter = function () {
+            const searchInput = document.getElementById("search-input");
+            searchInput.addEventListener("input", function () {
+                const query = this.value.toLowerCase();
+                residents.forEach((resident) => {
+                    const name = resident.querySelector(".name").textContent.toLowerCase();
+                    const room = resident.querySelector(".room").textContent.toLowerCase();
+                    resident.style.display = (name.includes(query) || room.includes(query))? "" : "none";
+                });
+            });
+        }
+        applyFilter();
+        </script>
+    </body>
+</html>
+

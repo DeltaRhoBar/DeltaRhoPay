@@ -23,20 +23,25 @@
                             <h5 class="card-title mb-4">Add Resident</h5>
                             <form id="add_resident_form">
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label for="name_field" class="form-label">Name</label>
                                         <input type="text" id="resident_name_field" class="form-control" />
                                     </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label for="r_floor_field" class="form-label">Room Floor</label>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="telephone-field" class="form-label">Telephone</label>
+                                        <input type="text" id="resident_telephone_field" class="form-control" />
+                                    </div>
+                                    <div class="col-md-2 mb-3">
+                                        <label for="r_floor_field" class="form-label">Floor</label>
                                         <input type="number" id="r_floor_field" class="form-control" min="0" max="99" />
                                     </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label for="r_nr_field" class="form-label">Room Nr</label>
+                                    <div class="col-md-2 mb-3">
+                                        <label for="r_nr_field" class="form-label">Nr</label>
                                         <input type="number" id="r_nr_field" class="form-control" min="0" max="99" />
                                     </div>
                                 </div>
                                 <button  type="submit" class="btn btn-primary w-100">Add</button>
+                                <a href="/residents" class="btn btn-primary w-100" style="margin-top:1rem">All Residents</a>
                             </form>
                         </div>
                     </div>
@@ -101,7 +106,8 @@
             const resident_data = {
                 R_floor: Number(document.getElementById('r_floor_field').value),
                 R_nr: Number(document.getElementById('r_nr_field').value),
-                Name: document.getElementById('resident_name_field').value
+                Name: document.getElementById('resident_name_field').value,
+                Telephone: document.getElementById('resident_telephone_field').value
             };
             try {
                 // Step 1: initial check
