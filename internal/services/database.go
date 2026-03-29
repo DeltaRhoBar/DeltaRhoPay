@@ -23,6 +23,8 @@ type Database interface {
 	RemoveBeverage(string) error
 	AddOrder(string, int, int, int) error
 	CheckOut() error
+	SetMessage(string) error 
+	GetMessage() (string, error)
 	Pay(int) error
 }
 
@@ -186,7 +188,7 @@ func (s *Sqlite) GetDebts() ([]models.Debt, error) {
 	debts := make([]models.Debt, 0)
 	for rows.Next() {
 		debt := models.Debt{}
-		if err := rows.Scan(&debt.Resident_id, &debt.Resident.Name, &debt.Resident.Room.Floor, &debt.Resident.Room.Nr, &debt.Resident.Moved, &debt.Resident.Debt ); err != nil {
+		if err := rows.Scan(&debt.Resident.Id, &debt.Resident.Name, &debt.Resident.Room.Floor, &debt.Resident.Room.Nr, &debt.Resident.Moved, &debt.Resident.Debt ); err != nil {
 			return nil, err
 		}
 		debts = append(debts, debt)
@@ -318,6 +320,27 @@ func (s *Sqlite) CheckOut() error {
 	query := `INSERT INTO checkouts DEFAULT VALUES;`
 	_, err := s.db.Exec(query) 
 	return err
+}
+
+func (s *Sqlite) SetMessage(message string) error {
+	query := `INSERT OR REPLACE 
+	INTO key_value (key, value)
+	VALUES ('message', ?);`
+	_, err := s.db.Exec(query, message) 
+	return err;
+}
+
+func (s *Sqlite) GetMessage() (string, error) {
+	query := `SELECT value 
+	from key_value 
+	WHERE key = 'message';`
+
+	result := ""
+	err := s.db.QueryRow(query).Scan(&result)
+	if err != nil {
+		return "", err
+	}
+	return result, nil
 }
 
 func (s *Sqlite) Pay(id int) error {

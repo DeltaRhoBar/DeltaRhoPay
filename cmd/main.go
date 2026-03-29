@@ -69,6 +69,7 @@ func main() {
 	getOrders := handlers.NewGetOrdersHandler(database)
 	checkout := handlers.NewCheckoutHandler(database)
 	pay := handlers.NewPayHandler(database)
+	invoice := handlers.NewInvoiceHandler(database)
 
 
 	r := routes.NewRouter(
@@ -79,7 +80,7 @@ func main() {
 		ordersPageHandler, 
 		loginData, 
 		addResident, updateResident, residentsPageHandler, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPageHandler, checkout,
-		pay)
+		pay, invoice)
 
     http.ListenAndServe(":8080", r.Handler())
 }
