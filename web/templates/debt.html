@@ -45,7 +45,7 @@
                     <tr data-id="{{.Resident_id}}" class="debt">
                         <td class="name">{{.Resident.Name}}</td>
                         <td class="room">{{.Resident.Room.Floor}}/{{.Resident.Room.Nr}}</td>
-                        <td>{{.Moved}}</td>
+                        <td>{{.Resident.Moved}}</td>
                         <td>{{trailingZero .Resident.Debt}}€</td>
                         <td><span class="badge bg-success">Pay</span></td>
                     </tr>
@@ -54,8 +54,6 @@
             </table>
         </div>
         <script>
-        const list = document.getElementById('orders-body');
-
         document.getElementById("checkout_button").addEventListener("click", async function() {
             let response = await fetch('/checkout', {
                 method: 'POST',

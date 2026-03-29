@@ -39,6 +39,12 @@ func main() {
 		return
 	}
 
+	residentsPageHandler, err := handlers.NewResidentsPageHandler(database)
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
+
 	ordersPageHandler, err := handlers.NewOrdersPageHandler(database)
 	if err != nil {
 		log.Fatal(err)
@@ -54,6 +60,7 @@ func main() {
 
 	loginData := handlers.NewLoginHandler(authenticator)
 	addResident := handlers.NewAddResidentHandler(database)
+	updateResident := handlers.NewUpdateResidentHandler(database)
 	forceAddResident := handlers.NewForceAddResidentHandler(database)
 	addBeverage := handlers.NewAddBeverageHandler(database)
 	removeBeverage := handlers.NewRemoveBeverageHandler(database)
@@ -63,6 +70,7 @@ func main() {
 	checkout := handlers.NewCheckoutHandler(database)
 	pay := handlers.NewPayHandler(database)
 
+
 	r := routes.NewRouter(
 		authenticator, 
 		indexHandler, 
@@ -70,7 +78,7 @@ func main() {
 		adminHandler, 
 		ordersPageHandler, 
 		loginData, 
-		addResident, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPageHandler, checkout,
+		addResident, updateResident, residentsPageHandler, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPageHandler, checkout,
 		pay)
 
     http.ListenAndServe(":8080", r.Handler())

@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS residents (
     r_floor INTEGER NOT NULL,
     r_nr INTEGER NOT NULL,
     name TEXT NOT NULL,
+    tel_nr TEXT NOT NULL,
     removed_on TEXT
 );
 

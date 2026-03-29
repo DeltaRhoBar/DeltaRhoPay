@@ -21,6 +21,8 @@ func NewRouter(
 	ordersPage http.Handler,
 	loginData http.Handler, 
 	addResident http.Handler, 
+	updateResident http.Handler,
+	allResidentsPage http.Handler,
 	forceAddResident http.Handler, 
 	addBeverage http.Handler, 
 	removeBeverage http.Handler, 
@@ -40,7 +42,7 @@ func NewRouter(
 
 	static := http.FileServer(http.Dir("web/static/"))
 
-	router.setupRoutes(static, index, loginPage, admin, ordersPage, loginData, addResident, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPage, checkout, pay)
+	router.setupRoutes(static, index, loginPage, admin, ordersPage, loginData, addResident, updateResident, allResidentsPage, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPage, checkout, pay)
 
 	return router
 }
@@ -53,6 +55,8 @@ func (r *Router) setupRoutes(
 	ordersPage http.Handler,
 	loginData http.Handler, 
 	addResident http.Handler, 
+	updateResident http.Handler,
+	allResidentsPage http.Handler,
 	forceAddResident http.Handler, 
 	addBeverage http.Handler, 
 	removeBeverage http.Handler, 
@@ -72,6 +76,8 @@ func (r *Router) setupRoutes(
 	r.chiRouter.Group(func(cr chi.Router) {
 		cr.Use(middleware.Auth(r.authenticator))
 		cr.Handle("/addResident", addResident)
+		cr.Handle("/updateResident", updateResident)
+		cr.Handle("/residents", allResidentsPage)
 		cr.Handle("/forceAddResident", forceAddResident)
 		cr.Handle("/addBeverage", addBeverage)
 		cr.Handle("/removeBeverage", removeBeverage)
