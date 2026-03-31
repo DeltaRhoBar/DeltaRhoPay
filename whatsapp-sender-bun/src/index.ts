@@ -1,4 +1,4 @@
-import { Client, NoAuth } from "whatsapp-web.js";
+import { Client, MessageAck, NoAuth } from "whatsapp-web.js";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -176,6 +176,26 @@ async function sendMessages(job: Job) {
     console.log(`WhatsApp: change_state: ${state}`);
   });
 
+  //   whatsappClient.on("message_ack", async (msg, ack) => {
+  //     // if a message reaches the server to a number thats not saved to the phones contact -> archiving chat
+  //     // if (ack == MessageAck.ACK_SERVER) {
+  //     //   await rand_sleep();
+  //     //   const chat = await whatsappClient.getChatById(msg.to);
+  //     //   await rand_sleep();
+  //     //   console.log(`Got chat: ${chat.name}, Archived: ${chat.archived}`);
+  //     //   await rand_sleep();
+  //     //   const contact = await chat.getContact();
+  //     //   await rand_sleep();
+  // 
+  //     //   if (!contact.isMyContact && !chat.archived) {
+  //     //     console.log('Reciever not in contacts -> archiving');
+  //     //     await chat.archive();
+  //     //     await rand_sleep();
+  //     //   }
+  //     // }
+  //     // console.log(`Message: ${msg}`);
+  //   });
+
   whatsappClient.once("ready", async () => {
     for (const message of job.messages) {
       if (job.cancelled) {
@@ -208,16 +228,16 @@ async function sendMessages(job: Job) {
         await whatsappClient.sendMessage(number, message.message);
         await rand_sleep();
         console.log(`Contact in users contacts: ${contact.isMyContact}`);
+
         if (!contact.isMyContact) {
-          console.log('Reciever not in contacts -> archiving\nGetting Chat...');
+          // contact not in users contacts -> archiving
+          await sleep(2000); // sleep for two seconds to make sure message is recieved on the server
           const chat = await contact.getChat();
+          console.log(`Archiving chat with: ${chat.name}`);
           await rand_sleep();
-          console.log(`Got chat: ${chat.name}, Archived: ${chat.archived}`);
-          if (chat.archived) continue;
-          console.log('Archiving...')
-          await chat.archive();
-          await rand_sleep();
+          await chat.archive(); // WARN: currently not working
         }
+
         job.messagesSend.push(message);
         console.log("Message send");
       } catch (err) {
