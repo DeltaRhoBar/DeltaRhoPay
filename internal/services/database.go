@@ -15,6 +15,7 @@ type Database interface {
 	GetAllResidents() ([]models.Resident, error)
 	GetBeverages() ([]models.Beverage, error)
 	GetDebts() ([]models.Debt, error)
+	GetDebt(int) (models.MessageData, error)
 	GetOrders(int) ([]models.Order, error)
 	AddResidentIfNotOccupied(int, int, string, string) (bool, error)
 	AddResidentReplace(int, int, string, string) error
@@ -196,6 +197,26 @@ func (s *Sqlite) GetDebts() ([]models.Debt, error) {
 	return debts, nil
 }
 
+func (s *Sqlite) GetDebt(id int) (models.MessageData, error) {
+	const query = `
+		SELECT
+		r.name,
+		r.telephone,
+		SUM(b.price * o.amount) AS unpaid_total
+		FROM residents r
+		JOIN orders o ON r.id = o.resident_id
+		JOIN beverages b ON b.id = o.beverage_id
+		WHERE o.paid_on IS NULL
+		AND o.date < (SELECT MAX(date) FROM checkouts)
+		AND r.id = ?
+		GROUP BY r.id
+		HAVING SUM(b.price * o.amount) > 0
+		ORDER BY r.r_floor ASC, r.r_nr ASC;
+		`
+	result := models.MessageData{}
+	err := s.db.QueryRow(query, id).Scan(&result.Name, &result.Telephone, &result.Amount)
+	return result, err 
+}
 
 
 func (s *Sqlite) GetOrders(page int) ([]models.Order, error) {
