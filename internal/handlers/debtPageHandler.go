@@ -13,6 +13,7 @@ import (
 
 type debtPageData struct {
 	Debts []models.Debt
+	Message string
 }
 
 type DebtPageHandler struct {
@@ -40,7 +41,8 @@ func (h *DebtPageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to get debts", http.StatusInternalServerError)
 		return
 	}
-	data := &debtPageData{Debts: debts}
+	message, _ := h.db.GetMessage()
+	data := &debtPageData{Debts: debts, Message: message}
 	err = h.template.Execute(w, data)
 	if err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)

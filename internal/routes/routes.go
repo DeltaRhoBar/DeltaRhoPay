@@ -32,6 +32,7 @@ func NewRouter(
 	debtPage http.Handler,
 	checkout http.Handler,
 	pay http.Handler,
+	invoice http.Handler,
 ) *Router {
 	cr := chi.NewRouter()
 
@@ -42,7 +43,7 @@ func NewRouter(
 
 	static := http.FileServer(http.Dir("web/static/"))
 
-	router.setupRoutes(static, index, loginPage, admin, ordersPage, loginData, addResident, updateResident, allResidentsPage, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPage, checkout, pay)
+	router.setupRoutes(static, index, loginPage, admin, ordersPage, loginData, addResident, updateResident, allResidentsPage, forceAddResident, addBeverage, removeBeverage, addOrder, getResidents, getOrders, debtPage, checkout, pay, invoice)
 
 	return router
 }
@@ -66,6 +67,7 @@ func (r *Router) setupRoutes(
 	debtPage http.Handler,
 	checkout http.Handler,
 	pay http.Handler,
+	invoice http.Handler,
 ) {
 	r.chiRouter.Handle("/static/*", http.StripPrefix("/static/", static))
 	r.chiRouter.Handle("/", index)
@@ -87,6 +89,7 @@ func (r *Router) setupRoutes(
 		cr.Handle("/debt", debtPage)
 		cr.Handle("/checkout", checkout)
 		cr.Handle("/pay", pay)
+		cr.Handle("/sendInvoice", invoice)
 	})
 }
 
