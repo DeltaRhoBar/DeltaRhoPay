@@ -68,7 +68,9 @@
                 id="orders-table">
                 <thead class="table-dark">
                     <tr>
-                        <th scope="col"> </th>
+                        <th scope="col">
+                            <input id="select_all" class="form-check-input" type="checkbox" />
+                        </th>
                         <th scope="col">Resident</th>
                         <th scope="col">Room</th>
                         <th scope="col">Moved out</th>
@@ -86,7 +88,7 @@
                         <td class="room">{{.Resident.Room.Floor}}/{{.Resident.Room.Nr}}</td>
                         <td>{{.Resident.Moved}}</td>
                         <td>{{trailingZero .Resident.Debt}}€</td>
-                        <td><span class="badge bg-success">Pay</span></td>
+                        <td><span class="badge bg-success" style="cursor: pointer;">Pay</span></td>
                     </tr>
                     {{end}}
                 </tbody>
@@ -104,6 +106,16 @@
                 alert('Failed to submit. Please try again.');
             }else{
                 window.location.reload();
+            }
+        });
+
+        document.getElementById("select_all").addEventListener("change", async function() {
+            const rows = document.querySelectorAll('#debts-body tr');
+            for (const row of rows) {
+                const checkbox = row.querySelector('input[type="checkbox"]');
+                if (checkbox) {
+                    checkbox.checked = this.checked;
+                }
             }
         });
 
