@@ -9,7 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   GHCR_MAIN_IMAGE_NAME: ghcr.io/DeltaRhoBar/DeltaRhoPay
-  GHCR_SENDER_IMAGE_TAG: ghcr.io/DeltaRhoBar/whatsapp-sender
+  GHCR_SENDER_IMAGE_NAME: ghcr.io/DeltaRhoBar/whatsapp-sender
   GHCR_IMAGE_TAG: latest
   
 
