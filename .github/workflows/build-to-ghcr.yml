@@ -69,7 +69,7 @@ jobs:
       - name: Build and Push sender Image
         uses: docker/build-push-action@v6
         with:
-          file: ./Containerfile
+          file: ./whatsapp-sender-bun/Containerfile
           context: ./whatsapp-sender-bun
           push: true
           tags: ${{ env.SENDER_IMAGE_TAG }}
