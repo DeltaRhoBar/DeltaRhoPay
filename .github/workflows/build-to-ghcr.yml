@@ -8,7 +8,8 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  GHCR_IMAGE_NAME: ghcr.io/${{ github.actor }}/DeltaRhoPay
+  GHCR_MAIN_IMAGE_NAME: ghcr.io/${{ github.actor }}/DeltaRhoPay
+  GHCR_SENDER_IMAGE_TAG: ghcr.io/${{ github.actor }}/whatsapp-sender
   GHCR_IMAGE_TAG: latest
   
 
@@ -23,7 +24,8 @@ jobs:
     steps:
       - name: Lowercase IMAGE_TAG
         run: |
-          echo "IMAGE_TAG=${GHCR_IMAGE_NAME@L}:${GHCR_IMAGE_TAG}" >> "${GITHUB_ENV}"
+          echo "MAIN_IMAGE_TAG=${GHCR_MAIN_IMAGE_NAME@L}:${GHCR_IMAGE_TAG}" >> "${GITHUB_ENV}"
+          echo "SENDER_IMAGE_TAG=${GHCR_SENDER_IMAGE_NAME@L}:${GHCR_IMAGE_TAG}" >> "${GITHUB_ENV}"
       
       - name: Checkout code
         uses: actions/checkout@v6
@@ -35,11 +37,19 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and Push Image
+      - name: Build and Push main Image
         uses: docker/build-push-action@v6
         with:
           file: ./Dockerfile
           context: .
           push: true
-          tags: ${{ env.IMAGE_TAG }}
+          tags: ${{ env.MAIN_IMAGE_TAG }}
+
+      - name: Build and Push sender Image
+        uses: docker/build-push-action@v6
+        with:
+          file: ./Containerfile
+          context: ./whatsapp-sender-bun
+          push: true
+          tags: ${{ env.SENDER_IMAGE_TAG }}
         
