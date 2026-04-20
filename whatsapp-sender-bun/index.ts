@@ -1,6 +1,7 @@
-import { Client, MessageAck, NoAuth } from "whatsapp-web.js";
+import { Client, NoAuth } from "whatsapp-web.js";
 import { Hono } from "hono";
 import { z } from "zod";
+import { mkdir } from "fs/promises";
 
 // Constant
 
@@ -11,6 +12,9 @@ const WHATS_APP_SEND_MIN_DELAY = 3000; // 3 seconds
 const WHATS_APP_SEND_MAX_DELAY = 6000; // 6 seconds
 const SHORT_DELAY_MIN = 100;
 const SHORT_DELAY_MAX = 800;
+const SCREENSHOT = false;
+const SCREENSHOT_INTERVAL = 2000; // 2 seconds
+const SCREENSHOT_DIR = "./screenshots";
 
 // ----- Types -----
 // WhatsApp Message to send to a client
@@ -147,6 +151,10 @@ async function sendMessages(job: Job) {
     deviceName: WHATS_APP_DEVICE_NAME,
     puppeteer: {
       headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-gpu'
+      ]
     },
   });
 
@@ -197,7 +205,9 @@ async function sendMessages(job: Job) {
   //   });
 
   whatsappClient.once("ready", async () => {
+    console.log("WhatsApp ready");
     for (const message of job.messages) {
+      console.log(`Starting 'Send Message' to ${message.number}`);
       if (job.cancelled) {
         job.status = "cancelled";
         job.finishedAt = Date.now();
@@ -223,6 +233,7 @@ async function sendMessages(job: Job) {
       // send message to client
       try {
         const contact = await whatsappClient.getContactById(number);
+        console.log("Got contact from phone number");
         await rand_sleep();
         console.log(`Sending message to ${number}`);
         await whatsappClient.sendMessage(number, message.message);
@@ -255,7 +266,21 @@ async function sendMessages(job: Job) {
     block.release();
   });
 
-  whatsappClient.initialize();
+  await whatsappClient.initialize();
+
+  console.log(`Puppeteer running with: ${await whatsappClient.pupBrowser?.version()}`);
+
+  if (SCREENSHOT) {
+    await mkdir(SCREENSHOT_DIR, { recursive: true });
+  }
+
+  const screenshotTimer = setInterval(async () => {
+    const page = whatsappClient.pupPage;
+    if (!page) return;
+    if (SCREENSHOT) {
+      await page.screenshot({ path: `${SCREENSHOT_DIR}/screenshot-${Date.now()}.png` });
+    }
+  }, SCREENSHOT_INTERVAL);
 
   // wait (max time: WHATS_APP_SEND_TIMEOUT) for promise completion
   setTimeout(
@@ -265,14 +290,13 @@ async function sendMessages(job: Job) {
   try {
     await block.wait();
     job.status = "success";
-    job.finishedAt = Date.now();
-    await whatsappClient.logout();
   } catch (err) {
     job.error = String(err);
     job.status = "failed";
-    job.finishedAt = Date.now();
-    await whatsappClient.logout();
   }
+  clearInterval(screenshotTimer);
+  job.finishedAt = Date.now();
+  await whatsappClient.logout();
 }
 
 const app = new Hono();
