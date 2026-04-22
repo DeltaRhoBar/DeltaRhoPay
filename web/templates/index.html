@@ -249,11 +249,14 @@
                 if (!response.ok) {
                     alert('Failed to submit form. Please try again.');
                 }else{
+                    /*
                     resetAmount();
                     refreshResidents();
                     applyFilter();
                     setUpModal();
                     myModal.hide();
+                    */
+                    window.location.reload();
                 }
             } catch (error) {
                 console.error('Error:', error);
