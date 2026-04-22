@@ -74,7 +74,7 @@ func (h *InvoiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	url := "http://localhost:4242/jobs"
+	url := "http://host.containers.internal:4242/jobs"
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
@@ -107,7 +107,7 @@ func (h *InvoiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for {
 		time.Sleep(500 * time.Millisecond)
 		client := &http.Client{}
-		url = fmt.Sprintf("http://localhost:4242/jobs/%s", job.JobID)
+		url = fmt.Sprintf("http://host.containers.internal:4242/jobs/%s", job.JobID)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			http.Error(w, "Internal Server Error: "+err.Error(), http.StatusInternalServerError)
