@@ -62,7 +62,7 @@ func (h *InvoiceHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			message{
 				Number: messageData.Telephone,
 				Message: strings.NewReplacer(
-					"{name}", messageData.Name,
+					"{name}", strings.Split(messageData.Name, " ")[0],
 					"{amount}", fmt.Sprintf("%.2f", float32(messageData.Amount) / 100),
 					).Replace(invoiceData.Message),
 			},
